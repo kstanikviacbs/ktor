@@ -27,9 +27,9 @@ internal class SignalPoint : Closeable {
             val pipeDescriptors = allocArray<IntVar>(2)
             pipe(pipeDescriptors).check()
 
-            repeat(2) { index ->
-                makeNonBlocking(pipeDescriptors[index])
-            }
+//            repeat(2) { index ->
+//                makeNonBlocking(pipeDescriptors[index])
+//            }
 
             Pair(pipeDescriptors[0], pipeDescriptors[1])
         }
