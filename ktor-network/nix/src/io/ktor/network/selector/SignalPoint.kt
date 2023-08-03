@@ -43,7 +43,7 @@ internal class SignalPoint : Closeable {
         synchronized(lock) {
             if (closed) return@synchronized
             while (remaining > 0) {
-                remaining -= read_from_pipe(readDescriptor)
+                remaining -= readFromPipe(readDescriptor)
             }
         }
     }
@@ -74,8 +74,17 @@ internal class SignalPoint : Closeable {
             closed = true
 
             close(writeDescriptor)
-            read_from_pipe(readDescriptor)
+            readFromPipe(readDescriptor)
             close(readDescriptor)
+        }
+    }
+
+    private fun readFromPipe(descriptor: Int): Int {
+        val result = read_from_pipe(descriptor)
+        if (result < 0) {
+            throw PosixException.forErrno()
+        } else {
+            return result
         }
     }
 
