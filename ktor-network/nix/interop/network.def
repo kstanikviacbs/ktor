@@ -50,6 +50,7 @@ int read_from_pipe(int descriptor)
                 return errno;
             } else {
                 sleep(1);
+                return errno;
             }
         }
         if (result == 0) {
