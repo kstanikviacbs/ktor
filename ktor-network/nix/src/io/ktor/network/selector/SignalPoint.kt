@@ -83,7 +83,9 @@ internal class SignalPoint : Closeable {
         val result = read_from_pipe(descriptor)
         if (result < 0) {
             val exception = PosixException.forErrno()
-            if (exception !is PosixException.TryAgainException) {
+            if (exception is PosixException.TryAgainException) {
+                return 0
+            } else {
                 throw exception
             }
         }
