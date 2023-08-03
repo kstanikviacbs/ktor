@@ -86,9 +86,8 @@ internal class SignalPoint : Closeable {
             if (exception !is PosixException.TryAgainException) {
                 throw exception
             }
-        } else {
-            return result
         }
+        return result
     }
 
     private fun makeNonBlocking(descriptor: Int) {
