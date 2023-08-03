@@ -3,6 +3,9 @@ package=io.ktor.network.interop
 #include <sys/select.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
 
 typedef struct selection_set {
     fd_set *value;
@@ -33,4 +36,26 @@ void selector_release_fd_set(selection_set set) {
 
 int selector_pselect(int descriptor, selection_set read_set, selection_set write_set, selection_set error_set) {
     return pselect(descriptor, read_set.value, write_set.value, error_set.value, NULL, NULL);
+}
+
+int read_from_pipe(int descriptor)
+{
+    int result, count;
+    char buf[1024];
+
+    while (1) {
+        result = read(descriptor, buf, 1024);
+        if (result < 0) {
+            if (errno != EAGAIN) {
+                return errno;
+            } else {
+                sleep(1);
+            }
+        }
+        if (result == 0) {
+            return count;
+        }
+        count += result;
+    }
+    return count;
 }

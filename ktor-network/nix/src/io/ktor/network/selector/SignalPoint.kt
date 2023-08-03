@@ -4,6 +4,7 @@
 
 package io.ktor.network.selector
 
+import io.ktor.network.interop.*
 import io.ktor.network.util.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
@@ -27,9 +28,9 @@ internal class SignalPoint : Closeable {
             val pipeDescriptors = allocArray<IntVar>(2)
             pipe(pipeDescriptors).check()
 
-//            repeat(2) { index ->
-//                makeNonBlocking(pipeDescriptors[index])
-//            }
+            repeat(2) { index ->
+                makeNonBlocking(pipeDescriptors[index])
+            }
 
             Pair(pipeDescriptors[0], pipeDescriptors[1])
         }
@@ -42,7 +43,7 @@ internal class SignalPoint : Closeable {
         synchronized(lock) {
             if (closed) return@synchronized
             while (remaining > 0) {
-                remaining -= readFromPipe()
+                remaining -= read_from_pipe(readDescriptor)
             }
         }
     }
@@ -73,38 +74,9 @@ internal class SignalPoint : Closeable {
             closed = true
 
             close(writeDescriptor)
-            readFromPipe()
+            read_from_pipe(readDescriptor)
             close(readDescriptor)
         }
-    }
-
-    @OptIn(UnsafeNumber::class)
-    private fun readFromPipe(): Int {
-        var count = 0
-
-        memScoped {
-            val buffer = allocArray<ByteVar>(1024)
-
-            do {
-                val result = read(readDescriptor, buffer, 1024.convert()).convert<Int>()
-                if (result < 0) {
-                    when (val error = PosixException.forErrno()) {
-                        is PosixException.TryAgainException -> {}
-                        else -> throw error
-                    }
-
-                    break
-                }
-
-                if (result == 0) {
-                    break
-                }
-
-                count += result
-            } while (true)
-        }
-
-        return count
     }
 
     private fun makeNonBlocking(descriptor: Int) {
