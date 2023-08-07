@@ -55,16 +55,11 @@ internal class SignalPoint : Closeable {
 
             if (remaining > 0) return
 
-            memScoped {
-                val array = allocArray<ByteVar>(1)
-                array[0] = 7
                 // note: here we ignore the result of write intentionally
                 // we simply don't care whether the buffer is full or the pipe is already closed
-                val result = write(writeDescriptor, array, 1.convert())
+                val result = write_to_pipe(writeDescriptor)
                 if (result < 0) return
-
-                remaining += result.toInt()
-            }
+                remaining += result
         }
     }
 
