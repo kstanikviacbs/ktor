@@ -35,7 +35,6 @@ int read_from_pipe(int descriptor) {
             if (errno != EAGAIN) {
                 return errno;
             } else {
-                sleep(1);
                 return count;
             }
         }
