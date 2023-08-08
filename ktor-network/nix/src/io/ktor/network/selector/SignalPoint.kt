@@ -4,6 +4,7 @@
 
 package io.ktor.network.selector
 
+import io.ktor.network.interop.*
 import io.ktor.network.util.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
@@ -42,7 +43,7 @@ internal class SignalPoint : Closeable {
         synchronized(lock) {
             if (closed) return@synchronized
             while (remaining > 0) {
-                remaining -= readFromPipe()
+                remaining -= readFromPipe(readDescriptor)
             }
         }
     }
@@ -54,16 +55,11 @@ internal class SignalPoint : Closeable {
 
             if (remaining > 0) return
 
-            memScoped {
-                val array = allocArray<ByteVar>(1)
-                array[0] = 7
                 // note: here we ignore the result of write intentionally
                 // we simply don't care whether the buffer is full or the pipe is already closed
-                val result = write(writeDescriptor, array, 1.convert())
+                val result = write_to_pipe(writeDescriptor)
                 if (result < 0) return
-
-                remaining += result.toInt()
-            }
+                remaining += result
         }
     }
 
@@ -73,38 +69,20 @@ internal class SignalPoint : Closeable {
             closed = true
 
             close(writeDescriptor)
-            readFromPipe()
+            readFromPipe(readDescriptor)
             close(readDescriptor)
         }
     }
 
-    @OptIn(UnsafeNumber::class)
-    private fun readFromPipe(): Int {
-        var count = 0
-
-        memScoped {
-            val buffer = allocArray<ByteVar>(1024)
-
-            do {
-                val result = read(readDescriptor, buffer, 1024.convert()).convert<Int>()
-                if (result < 0) {
-                    when (val error = PosixException.forErrno()) {
-                        is PosixException.TryAgainException -> {}
-                        else -> throw error
-                    }
-
-                    break
-                }
-
-                if (result == 0) {
-                    break
-                }
-
-                count += result
-            } while (true)
+    private fun readFromPipe(descriptor: Int): Int {
+        val result = read_from_pipe(descriptor)
+        if (result < 0) {
+            val exception = PosixException.forErrno()
+            if (exception !is PosixException.TryAgainException) {
+                throw exception
+            }
         }
-
-        return count
+        return result
     }
 
     private fun makeNonBlocking(descriptor: Int) {

@@ -17,10 +17,6 @@ fun isAvailableForPublication(publication: Publication): Boolean {
 
     var result = false
     val jvmAndCommon = setOf(
-        "jvm",
-        "androidRelease",
-        "androidDebug",
-        "js",
         "metadata",
         "kotlinMultiplatform"
     )
